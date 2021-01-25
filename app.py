@@ -1,13 +1,20 @@
 from flask import Flask,render_template,jsonify,url_for
 import pandas as pd
 import json
+from datetime import datetime
 # from flask_sqlalchemy import SQLAlchemy # db enabled
 from sqlalchemy import create_engine
 # import yfinance as yf
 
 # db enabling the app.py
 app = Flask(__name__)
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
+
+db_path='sqlite:///./data/db.sqlite'
+
+engine=create_engine(db_path)
+
+
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////data/db.sqlite'
 # db = SQLAlchemy(app)
 
 # engine = create_engine(db)
@@ -41,13 +48,13 @@ def return_json():
 
 @app.route('/csv/read')
 def return_csv_data():
-    names=pd.read_csv('./static/data/data.csv')
+    names=pd.read_csv('./data/data.csv')
     return jsonify(names.to_dict())
 
 
 @app.route('/csv/read2')
 def return_csv_data2():
-    names=pd.read_csv('./static/data/data.csv')
+    names=pd.read_csv('./data/data.csv')
     custom_names={
         "names":list(names['name'].values),
         "qty":[float(x) for x in names['qty'].values]
@@ -63,6 +70,17 @@ def return_db_tables(table):
 
 @app.route('/db/<table>/<n>')
 def return_dynamic_route(table,n):
+    print("connecting engine")
+    global engine
+    conn=engine.connect()
+    sql_code=f"""
+    insert into db_use
+    values ('{datetime.now().strftime("%Y-%m-%d %T")}','{table}')
+    """
+    print(sql_code)
+    conn.execute(sql_code)
+    # conn.commit()
+    conn.close()
     return f'<h1>You have selected</h2><b>{table} with {n} rows limit</b>!'
 
 @app.route('/json/pd')
