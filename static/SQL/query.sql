@@ -1,3 +1,3 @@
-select * from sales 
-order by revenue desc 
-limit 10
+select * from $SYMBOL 
+order by date desc 
+limit $n

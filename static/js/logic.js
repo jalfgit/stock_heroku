@@ -20,3 +20,4 @@ d3.json('/csv/read2').then(function(data) {
     console.log(data);
     //do something with A and B
 })
+

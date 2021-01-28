@@ -6,20 +6,29 @@ from datetime import datetime
 from sqlalchemy import create_engine
 # import yfinance as yf
 
+import glob
+import os
+from string import Template
+import sys
+
+
 # db enabling the app.py
 app = Flask(__name__)
+
+password="datascience"
 
 db_path='sqlite:///./data/db.sqlite'
 
 engine=create_engine(db_path)
 
+basedir = os.path.abspath(os.path.dirname(__file__)) # works well
+# print(basedir)
+print(f'Directory {basedir}', file=sys.stderr)
 
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////data/db.sqlite'
 # db = SQLAlchemy(app)
 
 # engine = create_engine(db)
-
-# results=engine.execute('select * from sales')
 
 # sales_df=pd.read_sql('select * from sales',engine)
 
@@ -31,13 +40,20 @@ engine=create_engine(db_path)
 
 @app.route('/')
 def hello_world():
-    return '<h1>Hi there!</h2>Hello, <b>World</b>!'
+    if password=="datascience":
+        return '<h1>Hi there!</h2>Hello, <b>World</b>!'
+    else:
+        return '<H1>SERVER UNDER MAINTENANCE</H1>'
 
 @app.route('/welcome/')
 def render_index():
     df = pd.DataFrame([[1, 2], [3, 4], [5, 6], [7, 8]], columns=["A", "B"])
     a=100
-    return render_template('index.html',a=a,df=df)
+    if password=="datascience":
+        return render_template('index.html',a=a,df=df)
+    else:
+        return render_template('error.html',a=a,df=df)
+    
 
 @app.route('/json/')
 def return_json():
@@ -62,12 +78,6 @@ def return_csv_data2():
     return jsonify(custom_names)
 
 
-@app.route('/db_2/<table>/<n>')
-def return_db_tables(table):
-    sql_code="select * from " + table + " limit " + n
-    df=pd.read_sql(sql_code)
-    return jsonify(df.to_dict())
-
 @app.route('/db/<table>/<n>')
 def return_dynamic_route(table,n):
     print("connecting engine")
@@ -77,7 +87,7 @@ def return_dynamic_route(table,n):
     insert into db_use
     values ('{datetime.now().strftime("%Y-%m-%d %T")}','{table}')
     """
-    print(sql_code)
+    # print(sql_code)
     conn.execute(sql_code)
     # conn.commit()
     conn.close()
@@ -90,6 +100,61 @@ def return_pd():
 @app.route('/json/custom')
 def return_custom():
     return jsonify(sales_stats)    
+
+@app.route('/sql/<table>/<n>')
+def return_sql_report(table,n):
+    f_path=basedir+'/static/SQL/'+'*.sql'
+    sql_files=read_directory(basedir+'/static/SQL/','*.sql')
+    # print(sql_files)
+    sql_strings=[]
+    df_master=[]
+    sql_example=''
+    global engine
+    conn=engine.connect()
+
+    for sql_f in sql_files:
+        print("sqtringsddssfs")
+        sql_example=load_SQL(sql_f)
+        t=Template(load_SQL(sql_f))
+        sql_strings.append(t.substitute(SYMBOL=table,n=n).replace("\n",""))
+        
+    for sql_s in sql_strings:
+        df=pd.read_sql(sql_s,conn)
+        df_master.append(df)
+    
+    conn.close()
+    
+    return render_template("sqlreport.html",dfs=df_master,sqls=sql_strings)
+    # return f"""
+    #     returning data for {table} and {n}<br>\nBaseDir:{basedir}\n<br>Other:{app.instance_path}\n{f_path}
+    #     <br>
+    #     {sql_files}
+    #     <br><b>Resulting SQL: </b><br>{sql_example}
+    #     <br><b>Replacement SQL: </b><br>{sql_strings}
+
+    # """
+
+def read_directory(path:str,file_types:str="*.sql"):
+    """[summary]
+    needs glob library to read directory
+    Args:
+        path (str): [description]
+        file_types (str, optional): [description]. Defaults to "*.sql".
+    """
+    files_in_dir=glob.glob(path+file_types)
+    for file in files_in_dir:
+        print(f'File found: {file}')
+    return files_in_dir
+
+def load_SQL(filename:str):
+    """
+    input: filename:str
+    output: string object
+    """
+    with open(filename, "r") as file_handle:
+        contents=file_handle.read()
+        return contents
+
 
 
 if __name__ == "__main__":

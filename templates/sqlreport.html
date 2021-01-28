@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Report Writer</title>
+    <style>
+
+        .dataframe  {
+            border-collapse: collapse;
+        margin: 25px 0;
+        font-size: 0.9em;
+        font-family: sans-serif;
+        min-width: 400px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+
+        }
+
+        thead {
+            font-size: x-small;
+            color:deeppink;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>SQL Report Writer</h1>
+
+    <!-- start the report with tables -->
+    {%for i in range(0, dfs|length)%}
+    
+    <input id="sql_code_{{i|string}}" value="{{sqls[i]}}" size="{{sqls[i]|length}}">
+    
+    {{dfs[i].to_html(index=False)|safe}}
+    <hr>
+    {% endfor %} 
+    
+</body>
+</html>
